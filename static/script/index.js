@@ -77,6 +77,11 @@ function closeButton(page_id) {
     </svg>`)
 }
 
+function round2(num) {
+    const int = parseInt(num)
+    return int + (num - int).toPrecision(2).substring(1)
+}
+
 async function newMarking() {
     const page_id = createPage('new-marking-panel')
     if(!page_id) return
@@ -203,7 +208,7 @@ async function openManagementPanel(session_id = '', password = '') {
                 const peer_avg = peers_num ? 
                     (peer_total / peers_num) * (superpeer_total ? .5 : 1) : 0
 
-                const result = Math.round(superpeer_avg + peer_avg)
+                const result = round2(superpeer_avg + peer_avg)
 
                 if(!peer_elems[e]) {
                     peer_elems[e] = document.createElement("div")
@@ -221,7 +226,7 @@ async function openManagementPanel(session_id = '', password = '') {
         function updateLog() {
             info.all_marks.filter(e=>e[7] > latest).forEach(e=>{
                 mark_log.insertAdjacentHTML("afterbegin",
-                `<span>${e[1] ? 'Peer' : 'Superpeer'} ${e[3]} (${e[2]}) marked ${e[4]} ${Math.round(e[5])}%${e[6] ? 
+                `<span>${e[1] ? 'Peer' : 'Superpeer'} ${e[3]} (${e[2]}) marked ${e[4]} ${round2(e[5])}%${e[6] ? 
                 ` and leave comment "${e[6]}."` : '.'}</span>`)
                 latest = e[7]
             })
