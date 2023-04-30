@@ -93,6 +93,24 @@ body {
 .basic-panel .peers .peer .block-btn {display: inline-block; width: 25%; margin: unset;}
 .basic-panel .peers .block-btn {margin-top: 0;}
 
+.basic-panel .upload-file {
+    text-align: left;
+    position: relative;
+}
+.basic-panel .upload-file input,
+.basic-panel .upload-file span {
+    width: 100%;
+    height: 100%;
+}
+.basic-panel .upload-file input {
+    position: absolute;
+    opacity: 0;
+}
+.basic-panel .upload-file span {
+    display: block;
+    text-align: center;
+}
+
 .basic-panel #select-peer,
 .basic-panel #peers-and-results .peer {
     display: block;

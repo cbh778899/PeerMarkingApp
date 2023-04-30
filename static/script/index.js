@@ -109,8 +109,10 @@ async function newMarking() {
         <span class="plaintext">Submit</span>
         <div class="block-btn blue" onclick="confirmCreation()">Confirm Creation</div>
         <span class="plaintext">Step 2 Alternative:<br>Restore Session</span>
-        <input class="enter-field" placeholder="Upload Setting file" type="file"
-         onchange='uploadSettingFile(event)'>
+        <div class='block-btn upload-file orange'>
+            <input type="file" class='clickable' onchange='uploadSettingFile(event)'>
+            <span>Upload Setting File</span>
+        </div>
     </div>`)
 
     const newMarkingPanel = document.getElementById("new-marking-panel")
