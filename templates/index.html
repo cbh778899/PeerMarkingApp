@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Peer Contribution Marking App</title>
+        <link rel='stylesheet' type='text/css' href="{{ url_for('static', filename='style/index.css') }}">
+        <script src="{{ url_for('static', filename='script/index.js') }}"></script>
+    </head>
+    <body>
+        <div class="basic-panel" style="z-index: 5;">
+            <span class="plaintext">Welcome!<br>Let's start marking with</span>
+            <div class="block-btn" onclick="newMarking()">Create New Marking</div>
+            <span class="plaintext">Or</span>
+            <input class="enter-field" placeholder="Enter Passcode" oninput="passcodeInput(event)">
+            <div class="block-btn blue" style="display: none;" id="submit-code" 
+                onclick="checkPasscodeLogin(event)">
+                Start Marking
+            </div>
+            <span class="alert"></span>
+            <span class="plaintext">Or</span>
+            <div class="block-btn orange" onclick="openManagementPanel()">Management Panel</div>
+        </div>
+    </body>
+</html>

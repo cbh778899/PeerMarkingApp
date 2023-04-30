@@ -1,0 +1,148 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+
+.basic-panel {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: block;
+    width: calc(33vw - 41px);
+    height: calc(100vh - 40px);
+    padding: 20px;
+    box-shadow: 0px 5px 10px gray;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    transition-duration: .5s;
+    background-color: white;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.basic-panel .clickable:hover {cursor: pointer;}
+
+.basic-panel .close-panel-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.basic-panel .alert,
+.basic-panel .info {
+    display: block;
+    margin-top: -15px;
+    margin-bottom: 30px;
+    font-size: small;
+}
+.basic-panel .alert {color: red;}
+.basic-panel .info {color: blue;}
+
+.basic-panel .plaintext, .basic-panel .block-btn, .basic-panel .enter-code {
+    display: block;
+}
+
+.basic-panel .plaintext {
+    font-size: 2vw;
+}
+
+.basic-panel .block-btn, .basic-panel .enter-field {
+    border: 1px solid black;
+    display: block;
+    width: 60%;
+    margin: 20px 0;
+    border-radius: 10px;
+    height: 50px;
+    text-align: center;
+    line-height: 50px;
+    transition-duration: .5s;
+}
+
+.basic-panel .block-btn {
+    background-color: limegreen;
+    color: white;
+    font-weight: bold;
+    white-space: nowrap;
+    font-size: 1vw;
+}
+.basic-panel .block-btn:hover {
+    cursor: pointer;
+    box-shadow: 2px 2px 5px gray;
+}
+
+.basic-panel .enter-field:focus,
+.basic-panel .enter-field:hover {
+    outline: none;
+    box-shadow: 2px 2px 5px gray;
+}
+
+.basic-panel .blue {background-color: dodgerblue;}
+.basic-panel .orange {background-color: orange;}
+.basic-panel .red {background-color: red;}
+
+.basic-panel #peers-and-results,
+.basic-panel #mark-log,
+.basic-panel .peers {margin-top: 20px;}
+
+.basic-panel .peers .peer {margin-bottom: 20px;}
+.basic-panel .peers .peer .enter-field {display: inline-block; margin: unset; margin-right: 1%;}
+.basic-panel .peers .peer .block-btn {display: inline-block; width: 25%; margin: unset;}
+.basic-panel .peers .block-btn {margin-top: 0;}
+
+.basic-panel #select-peer,
+.basic-panel #peers-and-results .peer {
+    display: block;
+    width: 100%;
+    height: 30px;
+    font-weight: bold;
+    line-height: 30px;
+    margin-bottom: 20px;
+    border: 1px solid black;
+    border-radius: 15px;
+    text-align: center;
+    transition-duration: .3s;
+}
+
+.basic-panel #mark-log {
+    width: 100%;
+    display: block;
+    max-height: 300px;
+    margin-bottom: 20px;
+    overflow-y: auto;
+}
+.basic-panel #mark-log span {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.basic-panel #select-peer {
+    font-weight: unset;
+    margin-top: 10px;
+}
+
+.basic-panel #refresh-peer-list {width: fit-content; position: relative;}
+.basic-panel #refresh svg {position: absolute;}
+.basic-panel #refresh span {margin-left: 20px;}
+
+.basic-panel #peer-mark-main {display: none;}
+.basic-panel #peer-mark-main .title {
+    display: block;
+    margin-top: 10px;
+    font-size: 1vw;
+}
+.basic-panel #peer-mark-main #input-mark {
+    width: 40%;
+}
+.basic-panel #peer-mark-main #input-comment {
+    width: calc(80% - 10px);
+    height: 190px;
+    resize: none;
+    text-align: left;
+    line-height: unset;
+    padding: 10px;
+}
+
+::-webkit-scrollbar {width: 7px;}
+::-webkit-scrollbar-track {background: rgba(0, 0, 0, 0);}
+::-webkit-scrollbar-thumb {background: lightgray; border-radius: 5px;}
+::-webkit-scrollbar-thumb:hover {background: gray}
