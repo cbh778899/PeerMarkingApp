@@ -11,18 +11,20 @@ async function closePage(page_id) {
         pages.page_1 = undefined;
         if(pages.page_2) {
             const page_2 = document.getElementById(pages.page_2)
-            page_2.style.transform = 'translateX(100%)'
-            page_2.style.zIndex = '2'
+            page_2.classList.remove('page-2')
+            page_2.classList.remove('init-page-2')
+            page_2.classList.add('page-1')
+            page_2.classList.add('init-page-1')
             pages.page_1 = pages.page_2
             pages.page_2 = undefined
         }
     }
     else if(page_n === 2) pages.page_2 = undefined;
 
-    const newMarkingPanel = document.getElementById(page_id)
-    newMarkingPanel.style.transform = page_n === 2 ? 'translateX(100%)' : 'unset'
+    const closing_page = document.getElementById(page_id)
+    closing_page.classList.remove(`page-${page_n}`)
     await new Promise(s=>setTimeout(s, 500))
-    newMarkingPanel.remove()
+    closing_page.remove()
 }
 
 function createPage(page_id) {
@@ -93,7 +95,7 @@ async function newMarking() {
     }
 
     document.body.insertAdjacentHTML("beforeend", 
-    `<div class="basic-panel" style="z-index: ${3-page_id};" id="new-marking-panel">
+    `<div class="basic-panel init-page-${page_id}" id="new-marking-panel">
         ${closeButton('new-marking-panel')}
         <span class="plaintext">Step 1:<br>Management Password</span>
         <input id="manage-password" class="enter-field" placeholder="Password for management" type="text"
@@ -113,7 +115,7 @@ async function newMarking() {
 
     const newMarkingPanel = document.getElementById("new-marking-panel")
     await new Promise(s=>setTimeout(s, 1))
-    newMarkingPanel.style.transform = `translateX(${page_id}00%)`
+    newMarkingPanel.classList.add(`page-${page_id}`)
 }
 
 function inputManagePassword(event) {
@@ -182,7 +184,7 @@ async function openManagementPanel(session_id = '', password = '') {
         <div id='mark-log'></div>
         <span class="plaintext">Save</span>
         <div class="block-btn" id='save-csv'>Save Marks As CSV</div>
-        <div class="block-btn" id='save-setting'>Save This Session</div>`
+        <div class="block-btn orange" id='save-setting'>Save This Session</div>`
 
         const peer_elems = {}
         const peers_and_results = document.getElementById("peers-and-results")
@@ -329,7 +331,7 @@ async function openManagementPanel(session_id = '', password = '') {
     if(!page_id) return
 
     document.body.insertAdjacentHTML("beforeend", 
-        `<div class="basic-panel" style="z-index: ${3-page_id};" id="management-panel">
+        `<div class="basic-panel init-page-${page_id}" id="management-panel">
         </div>`)
 
     const managementPanel = document.getElementById("management-panel")
@@ -337,7 +339,7 @@ async function openManagementPanel(session_id = '', password = '') {
     session_id ? login(session_id, password) : unknown()
 
     await new Promise(s=>setTimeout(s, 1))
-    managementPanel.style.transform = `translateX(${page_id}00%)`
+    managementPanel.classList.add(`page-${page_id}`)
 }
 
 function checkPasscodeLogin(event) {
@@ -488,7 +490,7 @@ async function markingPanel(session_id, peer_type) {
             <input class='enter-field' placeholder='Please input your name here' name='peer_name'>
             <input class='enter-field' placeholder='Please input your ID here' name='peer_id'>
             <input type='checkbox' name='check_save_localstorage'>
-            <span style='font-size: small;'>
+            <span class='save-to-localstorage'>
                 Save this peer info to LocalStorage
             </span>
             <button class='block-btn' type='submit'>Continue</button>
@@ -523,7 +525,7 @@ async function markingPanel(session_id, peer_type) {
     if(!page_id) return
 
     document.body.insertAdjacentHTML("beforeend",
-    `<div class='basic-panel' id='do-marking-panel' style="z-index: ${3-page_id};">
+    `<div class='basic-panel init-page-${page_id}' id='do-marking-panel'>
     </div>`)
 
     const makring_panel = document.getElementById("do-marking-panel")
@@ -534,5 +536,5 @@ async function markingPanel(session_id, peer_type) {
     } else login()
 
     await new Promise(s=>setTimeout(s, 1))
-    makring_panel.style.transform = `translateX(${page_id}00%)`
+    makring_panel.classList.add(`page-${page_id}`)
 }
