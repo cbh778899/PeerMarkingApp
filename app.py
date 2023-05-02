@@ -83,6 +83,7 @@ def saveCSV(type):
     )
     csv_str = 'peer_type,peer_id,peer_name,target,mark,comment\n'
     for _,peer_type,peer_id,peer_name,target,mark,comment,_ in session_info['all_marks']:
+        comment = comment.replace(',', '@@COMMA@@').replace("\n", '@@NEWLINE@@')
         csv_str += f'{peer_type},{peer_id},{peer_name},{target},{mark},{comment}\n'
     if type == 'setting':
         setting_str = PEERS_START
@@ -114,6 +115,8 @@ def restoreSession():
     ]
     csv_file = StringIO(csv_str)
     csv_lines = list(csv.reader(csv_file, delimiter=','))
+    for i in range(len(csv_lines)):
+        csv_lines[i][-1] = csv_lines[i][-1].replace('@@COMMA@@', ',').replace("@@NEWLINE@@", '\n')
 
     session_id = db.restoreSession(password, peers, csv_lines[1:])
     return jsonify({'session_id': session_id})
