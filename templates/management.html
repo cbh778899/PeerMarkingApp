@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Peer Contribution Marking App | Management</title>
+        <link rel='stylesheet' type='text/css' href="{{ url_for('static', filename='style/index.css') }}">
+        <script src="{{ url_for('static', filename='script/index.js') }}"></script>
+        <script src="{{ url_for('static', filename='script/management.js') }}"></script>
+    </head>
+    <body>
+        <div class="basic-panel">
+            <span class="plaintext">Welcome, Administrator!</span>
+            <span class="plaintext" id="show-session-id"></span>
+            <div class="block-btn" onclick="newSessionPanel()">Create New Session</div>
+            <span class="plaintext">Or</span>
+            <div class="block-btn orange" onclick="managementPanel()">Management Panel</div>
+        </div>
+    </body>
+</html>

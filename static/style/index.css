@@ -60,6 +60,7 @@ body {
     text-align: center;
     line-height: 50px;
     transition-duration: .5s;
+    text-decoration: none;
 }
 
 .basic-panel .block-btn {

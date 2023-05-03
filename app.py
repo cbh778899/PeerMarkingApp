@@ -15,6 +15,10 @@ app = Flask(__name__)
 def root():
     return render_template('index.html')
 
+@app.route("/management", methods=['GET'])
+def management():
+    return render_template('management.html')
+
 @app.route("/create-session", methods=['POST'])
 def createSession():
     req = request.json
@@ -122,5 +126,5 @@ def restoreSession():
     return jsonify({'session_id': session_id})
 
 
-# if __name__ == '__main__':
-#     app.run(port=8000, debug=True, host='0.0.0.0')
+if __name__ == '__main__':
+    app.run(port=8000, debug=True, host='0.0.0.0')

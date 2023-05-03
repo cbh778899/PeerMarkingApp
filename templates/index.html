@@ -5,20 +5,19 @@
         <title>Peer Contribution Marking App</title>
         <link rel='stylesheet' type='text/css' href="{{ url_for('static', filename='style/index.css') }}">
         <script src="{{ url_for('static', filename='script/index.js') }}"></script>
+        <script src="{{ url_for('static', filename='script/home.js') }}"></script>
     </head>
     <body>
         <div class="basic-panel">
-            <span class="plaintext">Welcome!<br>Let's start marking with</span>
-            <div class="block-btn" onclick="newMarking()">Create New Marking</div>
-            <span class="plaintext">Or</span>
+            <span class="plaintext">Welcome!<br>If you are a common user:</span>
             <input class="enter-field" placeholder="Enter Passcode" oninput="passcodeInput(event)">
             <div class="block-btn blue" style="display: none;" id="submit-code" 
                 onclick="checkPasscodeLogin(event)">
                 Start Marking
             </div>
             <span class="alert"></span>
-            <span class="plaintext">Or</span>
-            <div class="block-btn orange" onclick="openManagementPanel()">Management Panel</div>
+            <span class="plaintext">If you are an adminstrator:</span>
+            <a href="/management" class="block-btn orange">Admin Options</a>
         </div>
     </body>
 </html>
