@@ -23,7 +23,7 @@ def management():
 def createSession():
     req = request.json
     session_id = db.newSession(
-        req['peers'],
+        req['groups'],
         req['password']
     )
     return jsonify({'session_id': session_id})
@@ -33,7 +33,8 @@ def updateSession():
     req = request.json
     db.updateSession(
         req['session_id'],
-        req['peers']
+        req['groups'],
+        req['update_group_name']
     )
     return jsonify({'updated': True})
 
@@ -71,6 +72,7 @@ def updateMarking():
         req['peer_id'],
         req['peer_name'],
         req['target'],
+        req['target_group'],
         req['mark'],
         req['comment']
     )
@@ -85,15 +87,14 @@ def saveCSV(type):
     session_info = db.getAllSessionInfo(
         session_id, password
     )
-    csv_str = 'peer_type,peer_id,peer_name,target,mark,comment\n'
-    for _,peer_type,peer_id,peer_name,target,mark,comment,_ in session_info['all_marks']:
+    csv_str = 'peer_type,peer_id,peer_name,target,target_group,mark,comment\n'
+    for _,peer_type,peer_id,peer_name,target,target_group,mark,comment,_ in session_info['all_marks']:
         comment = comment.replace(',', '@@COMMA@@').replace("\n", '@@NEWLINE@@')
-        csv_str += f'{peer_type},{peer_id},{peer_name},{target},{mark},{comment}\n'
+        csv_str += f'{peer_type},{peer_id},{peer_name},{target},{target_group},{mark},{comment}\n'
     if type == 'setting':
         setting_str = PEERS_START
-        for i in session_info['peers']:
-            setting_str += i + ','
-        setting_str = setting_str[0:-1] + f'\n{PEERS_END}{CSV_START}'
+        setting_str += '\n'.join([f"{i['name']}:{','.join(i['peers'])}" for i in session_info['groups']])
+        setting_str += f'\n{PEERS_END}{CSV_START}'
         setting_str += csv_str
         setting_str += CSV_END
         return Response(setting_str, mimetype="text/plain",headers={'Content-disposition': 'attachment; filename=session.txt'})
@@ -108,10 +109,14 @@ def restoreSession():
     setting_str = req['setting']
     password = req['password']
     
-    peers = setting_str[
+    groups_arr = setting_str[
         setting_str.find(PEERS_START)+len(PEERS_START):
-        setting_str.find(PEERS_END)
-    ].replace('\n', '').split(',')
+        setting_str.find(PEERS_END) - 1
+    ].split("\n")
+    groups = []
+    for i in groups_arr:
+        info = i.split(":")
+        groups.append({'name': info[0], 'peers': info[1].split(",")})
 
     csv_str = setting_str[
         setting_str.find(CSV_START)+len(CSV_START):
@@ -122,7 +127,7 @@ def restoreSession():
     for i in range(len(csv_lines)):
         csv_lines[i][-1] = csv_lines[i][-1].replace('@@COMMA@@', ',').replace("@@NEWLINE@@", '\n')
 
-    session_id = db.restoreSession(password, peers, csv_lines[1:])
+    session_id = db.restoreSession(password, groups, csv_lines[1:])
     return jsonify({'session_id': session_id})
 
 
