@@ -2,6 +2,7 @@ const pages = {
     page_1: undefined,
     page_2: undefined
 }
+let peer_info = undefined
 
 async function closePage(page_id) {
     const page_n = searchPage(page_id)
@@ -72,40 +73,31 @@ function round2(num) {
 
 async function markingPanel(session_id, peer_type) {
 
-    function getPeerMarkingDetails(peer_info) {
+    function getPeerMarkingDetails() {
         request('POST', '/peer-mark-info', res=>{
-            // TODO: res.groups
-            const info = {
-                ...peer_info,
-                peers: res.peers,
-                marks: {}
-            }
-            res.peers.forEach(e=>{
-                let target_mark = res.marks.filter(m=>m[4] === e)
-                target_mark = target_mark.length ? target_mark[0] : undefined
-
-                info.marks[e] = target_mark ? {
-                    target: e,
-                    mark: target_mark[5],
-                    comment: target_mark[6]
-
-                } : {}
+            const marks = {}
+            res.groups.forEach(group=>{
+                marks[group.name] = {}
+                group.peers.forEach(peer=>{
+                    marks[group.name][peer] = {mark: '', comment: ''}
+                    let current_mark = res.marks.filter(e=>(e[4] === peer && e[5] === group.name))
+                    if(current_mark.length) {
+                        current_mark = current_mark[0]
+                        marks[group.name][peer] = {
+                            mark: current_mark[6],
+                            comment: current_mark[7]
+                        }
+                    }
+                })
             })
-            marking(info)
+            marking({groups: res.groups, marks: marks})
         }, {session_id: session_id, peer_name: peer_info.peer_name, 
             peer_id: peer_info.peer_id, peer_type: peer_type})
     }
 
     function marking(info) {
-        makring_panel.innerHTML = 
+        marking_panel.innerHTML = 
         `${closeButton('do-marking-panel')}
-        <span class='plaintext'>Please select a peer to mark</span>
-        <select id='select-peer'>
-            <option value='-1' selected>Please select a peer to mark</option>
-            ${info.peers.map((e, i) => {
-                return `<option value='${i}'>${e}</option>`
-            }).join('')}
-        </select>
         <span id='refresh-peer-list' class='info clickable'>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-repeat" viewBox="0 0 16 16">
                 <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
@@ -113,92 +105,142 @@ async function markingPanel(session_id, peer_type) {
             </svg>
             <span>Click here to refresh</span>
         </span>
-        <div id='peer-mark-main'>
-            <span class='plaintext'>Peer Marking</span>
-            <span class='title'>Please mark this peer (0 - 100)</span>
-            <input id='input-mark' class='enter-field'>
-            <span class='title'>Leave this peer a comment if you have any</span>
-            <textarea id='input-comment' class='enter-field'></textarea>
-            <div id='submit-mark' class='block-btn'>Confirm Mark</div>
-            <span class='alert'></span>
-        </div>
+        <div id='peer-mark-main'></div>
         `
-
+        document.getElementById("refresh-peer-list").onclick = getPeerMarkingDetails
         const peer_mark_main = document.getElementById("peer-mark-main")
-        const input_mark = document.getElementById("input-mark")
-        const input_comment = document.getElementById("input-comment")
-        const refresh = document.getElementById("refresh-peer-list")
-        const submit_mark = document.getElementById("submit-mark")
 
-        let peer_index, mark, comment
-
-        input_mark.oninput = e => {
-            const value = e.target.value
-            let need_reset = true
+        function inputMarkValid(value) {
             if(/^[0-9]{0,3}(?:\.(?:[0-9]{1,2})?)?$/.test(value)) {
                 if(value) {
                     const float_value = parseFloat(value)
                     if(float_value >= 0 && float_value <= 100)
-                        need_reset = false
-                } else need_reset = false
+                        return true
+                } else return true
             }
-            if(need_reset) e.target.value = mark
-            else mark = value
+            return false
         }
 
-        input_comment.oninput = e => {comment = e.target.value}
-
-        document.getElementById("select-peer").onchange = e => {
-            peer_index = parseInt(e.target.value)
-            const current_mark = info.marks[info.peers[peer_index]]
-            if(peer_index >= 0) {
-                peer_mark_main.style.display = 'block'
-
-                mark = current_mark.mark || '0'
-                comment = current_mark.comment || ''
-
-                input_mark.value = mark
-                input_comment.textContent = comment
-            } else {
-                peer_mark_main.style.display = 'none'
+        info.groups.forEach(group=>{
+            peer_mark_main.insertAdjacentHTML("beforeend", 
+            `<span class='plaintext'>Group: ${group.name}</span>
+            <span class='title'>Mark as group</span>`)
+            const mark_as_group = document.createElement("input")
+            mark_as_group.placeholder = 'Mark of group'
+            mark_as_group.className ='enter-field input-mark'
+            let group_mark = ''
+            mark_as_group.oninput = e => {
+                const value = e.target.value
+                if(!inputMarkValid(value)) {
+                    e.target.value = group_mark
+                } else group_mark = value
             }
-        }
+            peer_mark_main.insertAdjacentElement("beforeend", mark_as_group)
+            peer_mark_main.insertAdjacentHTML("beforeend", "<span class='title'>OR Mark individually</span>")
+            const individuals = group.peers.map(()=>{return {}})
 
-        refresh.onclick = () => getPeerMarkingDetails({
-            peer_name: info.peer_name,
-            peer_id: info.peer_id
-        })
+            group.peers.forEach((peer, i)=>{
+                peer_mark_main.insertAdjacentHTML("beforeend", 
+                    `<span class='title'>Mark and/or comment ${peer}</span>`)
+                
+                individuals[i].peer_mark = info.marks[group.name][peer].mark
+                const mark_peer = document.createElement("input")
+                mark_peer.placeholder = 'Input mark'
+                mark_peer.className ='enter-field input-mark'
+                mark_peer.value = individuals[i].peer_mark
+                mark_peer.oninput = e => {
+                    const value = e.target.value
+                    if(!inputMarkValid(value)) {
+                        e.target.value = individuals[i].peer_mark
+                    } else individuals[i].peer_mark = value
+                }
 
-        submit_mark.onclick = e => {
-            if(!mark) {
-                e.target.nextElementSibling.textContent = 
-                'Please input a valid mark between 0 - 100!'
-            } else {
-                e.target.nextElementSibling.textContent = ''
-                info.marks[info.peers[peer_index]].mark = parseFloat(mark)
-                info.marks[info.peers[peer_index]].comment = comment
-                request("POST", '/update-marking', async res=>{
-                    const success = document.createElement("span")
-                    success.className = 'info'
-                    success.textContent = `Successfully marked for ${info.peers[peer_index]}.`
-                    e.target.insertAdjacentElement("afterend", success)
-                    await new Promise(s=>setTimeout(s, 3000))
-                    success.remove()
-                }, {
-                    session_id: session_id,
-                    peer_type: peer_type,
-                    peer_id: info.peer_id,
-                    peer_name: info.peer_name,
-                    target: info.peers[peer_index],
-                    mark: parseFloat(mark),
-                    comment: comment
+                const comment_peer = document.createElement("textarea")
+                comment_peer.placeholder = 'Input comment if you have any'
+                comment_peer.className = 'enter-field input-comment'
+                individuals[i].comment = info.marks[group.name][peer].comment
+                comment_peer.textContent = individuals[i].comment
+                comment_peer.oninput = e => {individuals[i].comment = e.target.value}
+
+                individuals[i].mark_elem = mark_peer
+                individuals[i].comment_elem = comment_peer
+
+                peer_mark_main.insertAdjacentElement("beforeend", mark_peer)
+                peer_mark_main.insertAdjacentElement("beforeend", comment_peer)
+            })
+            const submit_marking_group = document.createElement("div")
+            submit_marking_group.className = 'block-btn'
+            submit_marking_group.textContent = 'Submit Marking'
+
+            const marking_alert_info = document.createElement("span")
+            
+            submit_marking_group.onclick = () => {
+                const updates = []
+                const number_group_mark = group_mark ? parseFloat(group_mark) : 0
+                let got_error = false
+                group.peers.forEach((e, i)=>{
+                    if(got_error) return
+
+                    // mark is not empty
+                    if(individuals[i].peer_mark) {
+                        const number_mark = parseFloat(individuals[i].peer_mark)
+                        // mark changed
+                        if(number_mark !== info.marks[group.name][e].mark) {
+                            info.marks[group.name][e].mark = number_mark
+                            updates.push({...info.marks[group.name][e], peer: e})
+                        }
+                        // mark not changed but got group mark
+                        else if(group_mark) {
+                            info.marks[group.name][e].mark = number_group_mark
+                            individuals[i].mark_elem.value = group_mark
+                            individuals[i].peer_mark = group_mark
+                            updates.push({...info.marks[group.name][e], peer: e})
+                        }
+                        // mark not changed, no group mark, but got comment changed
+                        else if(individuals[i].comment !== info.marks[group.name][e].comment) {
+                            info.marks[group.name][e].comment = individuals[i].comment
+                            updates.push({...info.marks[group.name][e], peer: e})
+                        }
+                        // else, mark not changed, no group mark, dismiss change
+                    }
+                    // mark is empty but got group mark
+                    else if(group_mark) {
+                        info.marks[group.name][e].mark = number_group_mark
+                        individuals[i].mark_elem.value = group_mark
+                        individuals[i].peer_mark = group_mark
+                        updates.push({...info.marks[group.name][e], peer: e})
+                    }
+                    // mark is empty, no group mark, error
+                    else {
+                        got_error = true
+                        marking_alert_info.textContent = 'Please check if every mark is valid.'
+                        marking_alert_info.className = 'alert'
+                    }
                 })
+                if(!got_error) {
+                    request("POST", 'update-marking', async res=>{
+                        mark_as_group.value = ''
+                        group_mark = ''
+
+                        marking_alert_info.textContent = 'Successfully marked this group.'
+                        marking_alert_info.className = 'info'
+                        await new Promise(s=>setTimeout(s, 3000))
+                        marking_alert_info.textContent = ''
+                    }, {
+                        ...peer_info,
+                        peer_type, session_id,
+                        target_group: group.name,
+                        updates
+                    })
+                }
             }
-        }
+            peer_mark_main.insertAdjacentElement("beforeend", submit_marking_group)
+            peer_mark_main.insertAdjacentElement("beforeend", marking_alert_info)
+        })
     }
 
     function login() {
-        makring_panel.innerHTML = 
+        marking_panel.innerHTML = 
         `${closeButton('do-marking-panel')}
         <span class='plaintext'>Peer Details</span>
         <form id='confirm-login'>
@@ -224,14 +266,14 @@ async function markingPanel(session_id, peer_type) {
             } else if(!peer_id) {
                 confirm_login.lastElementChild.textContent = 'Please input a valid peer ID!'
             } else {
-                const peer_info = {
+                peer_info = {
                     peer_name: peer_name,
                     peer_id: peer_id
                 }
                 if(save_info)
                     localStorage.setItem('peer-info', JSON.stringify(peer_info))
 
-                getPeerMarkingDetails(peer_info)
+                getPeerMarkingDetails()
             }
         }
     }
@@ -243,13 +285,13 @@ async function markingPanel(session_id, peer_type) {
     `<div class='basic-panel init-page-${page_id}' id='do-marking-panel'>
     </div>`)
 
-    const makring_panel = document.getElementById("do-marking-panel")
-    let peer_info = localStorage.getItem("peer-info")
-    if(peer_info) {
-        peer_info = JSON.parse(peer_info)
-        getPeerMarkingDetails(peer_info)
+    const marking_panel = document.getElementById("do-marking-panel")
+    const stored_peer_info = localStorage.getItem("peer-info")
+    if(stored_peer_info) {
+        peer_info = JSON.parse(stored_peer_info)
+        getPeerMarkingDetails()
     } else login()
 
     await new Promise(s=>setTimeout(s, 1))
-    makring_panel.classList.add(`page-${page_id}`)
+    marking_panel.classList.add(`page-${page_id}`)
 }

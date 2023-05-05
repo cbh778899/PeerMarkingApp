@@ -129,7 +129,6 @@ body {
     text-align: center;
 }
 
-.basic-panel #select-peer,
 .basic-panel #peers-and-results .peer,
 .basic-panel .select-group-peer {
     display: block;
@@ -177,16 +176,15 @@ body {
 
 .basic-panel #confirm-login .save-to-localstorage {font-size: small;}
 
-.basic-panel #peer-mark-main {display: none;}
 .basic-panel #peer-mark-main .title {
     display: block;
     margin-top: 10px;
-    font-size: 1vw;
+    font-size: 1.3vw;
 }
-.basic-panel #peer-mark-main #input-mark {
+.basic-panel #peer-mark-main .input-mark {
     width: 40%;
 }
-.basic-panel #peer-mark-main #input-comment {
+.basic-panel #peer-mark-main .input-comment {
     width: calc(80% - 10px);
     height: 180px;
     resize: none;
@@ -232,16 +230,16 @@ body {
 
     .basic-panel .alert,
     .basic-panel .info,
-    .basic-panel #peer-mark-main #input-comment {font-size: x-large;}
+    .basic-panel #peer-mark-main .input-comment {font-size: x-large;}
 
-    .basic-panel #select-peer,
-    .basic-panel #peers-and-results .peer {
+    .basic-panel #peers-and-results .peer,
+    .basic-panel .select-group-peer {
         height: 60px;
         line-height: 60px;
         font-size: xx-large;
         border-radius: 25px;
     }
-    .basic-panel #peer-mark-main #input-comment {height: 380px;}
+    .basic-panel #peer-mark-main .input-comment {height: 380px;}
 
     .basic-panel #mark-log,
     .basic-panel #peer-mark-main .title,

@@ -13,7 +13,8 @@ class connDB():
         cursor.execute('create table groups (session_id text, name text, peers text, unique(session_id, name));')
         cursor.execute('create table marks ('+
                        'session_id text, peer_type integer, peer_id text, peer_name text, '+
-                       'target text, target_group text, mark numeric, comment text, timestamp numeric);')
+                       'target text, target_group text, mark numeric, comment text, timestamp numeric, '+
+                       'unique(session_id, peer_type, peer_id, peer_name, target, target_group));')
         conn.commit()
         cursor.close()
         conn.close()
@@ -48,11 +49,12 @@ class connDB():
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()
 
+        session_info = {}
         certification = cursor.execute('select * from sessions where id=? and password=?;', (session_id, password)).fetchone()
         if not certification:
             session_info['failed'] = True
         else:
-            session_info = {}
+            session_info['current_group'] = certification[-1]
             groups = cursor.execute('select name, peers from groups where session_id=?;', (session_id,)).fetchall()
             session_info['groups'] = [{'name': name, 'peers': peers.split(',')} for name, peers in groups]
 
@@ -64,13 +66,20 @@ class connDB():
         conn.close()
         return session_info
 
-    def updateSession(self, session_id, groups, update_group_name):
+    def updateSession(self, session_id, groups, update_group_name, update_peer_name):
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()
 
         if update_group_name:
             cursor.execute('update groups set name=? where session_id=? and name=?;', (
                 update_group_name[1], session_id, update_group_name[0]
+            ))
+            cursor.execute('update marks set target_group=? where session_id=? and target_group=?;', (
+                update_group_name[1], session_id, update_group_name[0]
+            ))
+        if update_peer_name:
+            cursor.execute('update marks set target=? where session_id=? and target=?;', (
+                update_peer_name[1], session_id, update_peer_name[0]
             ))
         for i in groups:
             # update first, will fail without error if not exist
@@ -84,12 +93,11 @@ class connDB():
         cursor.close()
         conn.close()
 
-    def newMarking(self, session_id, peer_type, peer_id, peer_name, target, target_group, mark, comment):
+    def updateCurrentGroup(self, session_id, current_group):
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()
 
-        cursor.execute('insert into marks values (?,?,?,?,?,?,?,?,?);',
-        (session_id, peer_type, peer_id, peer_name, target, target_group, mark, comment, time()))
+        cursor.execute("update sessions set current_group=? where id=?", (current_group, session_id))
 
         conn.commit()
         cursor.close()
@@ -98,30 +106,50 @@ class connDB():
     def getPeerMarkInfo(self, session_id, peer_id, peer_name, peer_type):
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()
+
+        current_group = cursor.execute('select current_group from sessions where id=?', (session_id,)).fetchone()[0]
         info = {}
-        info['marks'] = cursor.execute("select * from marks where session_id=? and"+
-                                       " peer_id=? and peer_name=? and peer_type=?",
-                                       (session_id, peer_id, peer_name, peer_type)).fetchall()
-        groups = cursor.execute('select name, peers from groups where session_id=?;', (session_id,)).fetchall()
+        mark_sql = (
+            "select * from marks where session_id=? and"+
+            " peer_id=? and peer_name=? and peer_type=?;"
+        )
+        mark_params = [session_id, peer_id, peer_name, peer_type]
+
+        groups_sql = "select name, peers from groups where session_id=?;"
+        groups_params = [session_id]
+
+        if current_group:
+            mark_sql = mark_sql[:-1] + " and target_group=?;"
+            mark_params.append(current_group)
+
+            groups_sql = groups_sql[:-1]+" and name=?;"
+            groups_params.append(current_group)
+
+        info['marks'] = cursor.execute(mark_sql, tuple(mark_params)).fetchall()
+        groups = cursor.execute(groups_sql, tuple(groups_params)).fetchall()
+        
         info['groups'] = []
         for i in groups:
-            info['groups'].append({'name': i[0], 'peers': i[1]})
+            info['groups'].append({'name': i[0], 'peers': i[1].split(',')})
         
         cursor.close()
         conn.close()
         return info
     
-    def updateMarking(self, session_id, peer_type, peer_id, peer_name, target, target_group, mark, comment):
+    def updateMarking(self, session_id, peer_type, peer_id, peer_name, target_group, updates):
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()
 
-        cursor.execute('delete from marks where session_id=? and '+
-                       'peer_id=? and peer_name=? and peer_type=? and target=? and target_group=?;', 
-                            (session_id, peer_id, peer_name, peer_type, target, target_group))
+        for i in updates:
+            cursor.execute("update marks set mark=?, comment=?, timestamp=? where "+
+                           "session_id=? and peer_id=? and peer_name=? and peer_type=? "+
+                           "and target=? and target_group=?;",
+                           (i['mark'], i['comment'], time(), session_id, peer_id, peer_name, peer_type, i['peer'], target_group))
+            cursor.execute("insert or ignore into marks values (?,?,?,?,?,?,?,?,?);", 
+                           (session_id, peer_type, peer_id, peer_name, i['peer'], target_group, i['mark'], i['comment'], time()))
         conn.commit()
         cursor.close()
         conn.close()
-        self.newMarking(session_id, peer_type, peer_id, peer_name, target, target_group, mark, comment)
     
     def restoreSession(self, password, groups, csv):
         new_session = self.newSession(groups, password)
@@ -129,9 +157,10 @@ class connDB():
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()
 
-        for peer_type, peer_id, peer_name, target, mark, comment in csv:
-            self.newMarking(new_session, int(peer_type), str(peer_id), str(peer_name),
-                            str(target), float(mark), str(comment))
+        for peer_type, peer_id, peer_name, target, target_group, mark, comment in csv:
+            cursor.execute("insert or ignore into marks values (?,?,?,?,?,?,?,?,?);",
+                (new_session, int(peer_type), str(peer_id), str(peer_name),
+                str(target), str(target_group), float(mark), str(comment), time()))
 
         conn.commit()
         cursor.close()

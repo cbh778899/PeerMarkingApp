@@ -48,7 +48,7 @@ function uploadSettingFile(event) {
                 closePage('new-marking-panel')
                 await new Promise(s=>setTimeout(s, 600))
                 session_info = {id: res.session_id, password: new_marking.password}
-                afterLoginSession()
+                await afterLoginSession(true)
                 managementPanel()
             }, {password: new_marking.password, setting: file_reader.result})
         }
@@ -115,15 +115,17 @@ function removePeer(event, group_index, peer_index) {
     remove_node.remove()
 }
 
-function afterLoginSession() {
+async function afterLoginSession(from_create_new = false) {
     document.getElementById("show-session-id").textContent = `Last Session ID: ${session_info.id}`
     const let_marking = document.getElementById("let-marking")
     let_marking.style.display = 'unset'
     let_marking.lastElementChild.onclick = ()=>markingPanel(session_info.id, 0)
+
+    if(from_create_new && searchPage('management-panel'))
+        await closePage('management-panel')
 }
 
 function confirmCreation() {
-    console.log(new_marking.groups);
     const filtered_groups = new_marking.groups.map(e=>{
         if(e) {
             return {
@@ -132,13 +134,12 @@ function confirmCreation() {
             }
         } else return undefined
     }).filter(e=>e)
-    console.log(filtered_groups);
 
     request('POST', '/create-session', async res=>{
         closePage('new-marking-panel')
         await new Promise(s=>setTimeout(s, 600))
         session_info = {id: res.session_id, password: new_marking.password}
-        afterLoginSession()
+        await afterLoginSession(true)
         managementPanel()
     }, {password: new_marking.password, groups: filtered_groups})
 }
@@ -148,6 +149,9 @@ async function managementPanel() {
         managementPanel.innerHTML = 
         `${closeButton('management-panel')}
         <span class="plaintext" style='margin-bottom: 30px;'>Session ID: ${session_info.id}</span>
+        <span class='plaintext'>Change Group for Marking</span>
+        <select class='select-group-peer' id='select-marking-group'></select>
+        <span class='info'></span>
         <span class="plaintext">Refresh For Updates</span>
         <div id='refresh' class="block-btn">Refresh</div>
         <span class="info">Auto refresh every 1 minute</span>
@@ -195,16 +199,16 @@ async function managementPanel() {
 
                 group.peers.forEach(peer => {
                     let superpeer_total = 0, superpeers_num = 0
-                    info.all_marks.filter(entry=>(entry[1] === 0 && entry[4] === peer))
+                    info.all_marks.filter(entry=>(entry[1] === 0 && entry[4] === peer && entry[5] === group.name))
                     .forEach(entry=>{
-                        superpeer_total += entry[5]
+                        superpeer_total += entry[6]
                         superpeers_num ++
                     })
     
                     let peer_total = 0, peers_num = 0
-                    info.all_marks.filter(entry=>(entry[1] === 1 && entry[4] === peer))
+                    info.all_marks.filter(entry=>(entry[1] === 1 && entry[4] === peer && entry[5] === group.name))
                     .forEach(entry=>{
-                        peer_total += entry[5]
+                        peer_total += entry[6]
                         peers_num ++
                     })
     
@@ -232,12 +236,38 @@ async function managementPanel() {
         let latest = 0
 
         function updateLog() {
-            info.all_marks.filter(e=>e[7] > latest).forEach(e=>{
+            info.all_marks.filter(e=>e[8] > latest).forEach(e=>{
                 mark_log.insertAdjacentHTML("afterbegin",
                 `<span>${e[1] ? 'Peer' : 'Superpeer'} ${e[3]} (${e[2]}) marked ${e[4]} in group "${e[5]}" ${round2(e[6])}%${e[7] ? 
                 ` and leave comment "${e[7]}."` : '.'}</span>`)
                 latest = e[8]
             })
+        }
+
+        // change selected marking group
+        const marking_group_selector = document.getElementById("select-marking-group")
+        marking_group_selector.insertAdjacentHTML("beforeend",
+            `<option value=''${
+                info.current_group ? '' : ' selected'
+                }>All Peers</option>`)
+        info.groups.forEach(e=>{
+            marking_group_selector.insertAdjacentHTML("beforeend",
+            `<option value='${e.name}'${
+                info.current_group === e.name ? 
+                ' selected' : ''}>Group: ${e.name}</option>`)
+        })
+        marking_group_selector.onchange = event => {
+            info.current_group = event.target.value
+            request("POST", "/update-current-group", async res=>{
+                if(info.current_group) {
+                event.target.nextElementSibling.textContent = 
+                    `Successfully set current group to ${info.current_group}.`
+                } else {
+                    event.target.nextElementSibling.textContent = 'Successfully set to all peers.'
+                }
+                await new Promise(s=>setTimeout(s, 3000))
+                event.target.nextElementSibling.textContent = ''
+            }, {session_id: session_info.id, current_group: info.current_group})
         }
 
         // edit groups and peers
@@ -290,10 +320,13 @@ async function managementPanel() {
             } else {
                 event.target.nextElementSibling.textContent = ''
                 let update_group_name = false
+                let update_peer_name = false
                 // add new group & peer
                 if(selected_group_index === -1) {
                     group_selector.insertAdjacentHTML("beforeend", 
                     `<option value='${info.groups.length}'>${group_name}</option>`)
+                    marking_group_selector.insertAdjacentHTML("beforeend", 
+                    `<option value='${group_name}'>Group: ${group_name}</option>`)
 
                     info.groups.push({
                         name: group_name,
@@ -321,6 +354,7 @@ async function managementPanel() {
                     }
                     // rename peer
                     if(old_peer_name !== peer_name) {
+                        update_peer_name = [old_peer_name, peer_name]
                         info.groups[selected_group_index].peers[selected_peer_index] = peer_name
 
                         peer_elems[group_name][peer_name] = peer_elems[group_name][old_peer_name]
@@ -334,7 +368,7 @@ async function managementPanel() {
                     group_selector.firstElementChild.selected = true
                     changePeerOptions()
                     update()
-                }, {session_id: session_info.id, groups: info.groups, update_group_name: update_group_name})
+                }, {session_id: session_info.id, groups: info.groups, update_group_name, update_peer_name})
             }
         }
 

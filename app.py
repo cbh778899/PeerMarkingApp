@@ -34,7 +34,8 @@ def updateSession():
     db.updateSession(
         req['session_id'],
         req['groups'],
-        req['update_group_name']
+        req['update_group_name'],
+        req['update_peer_name']
     )
     return jsonify({'updated': True})
 
@@ -51,6 +52,12 @@ def getSessionInfo():
         req['password']
     )
     return jsonify(session_info)
+
+@app.route("/update-current-group", methods=['POST'])
+def updateCurrentGroup():
+    req = request.json
+    db.updateCurrentGroup(req['session_id'], req['current_group'])
+    return jsonify({'updated': True}) 
 
 @app.route('/peer-mark-info', methods=['POST'])
 def getPeerMarkInfo():
@@ -71,10 +78,8 @@ def updateMarking():
         req['peer_type'],
         req['peer_id'],
         req['peer_name'],
-        req['target'],
         req['target_group'],
-        req['mark'],
-        req['comment']
+        req['updates']
     )
     return jsonify({'updated': True})
 
@@ -131,5 +136,5 @@ def restoreSession():
     return jsonify({'session_id': session_id})
 
 
-if __name__ == '__main__':
-    app.run(port=8000, debug=True, host='0.0.0.0')
+# if __name__ == '__main__':
+#     app.run(port=8000, debug=True, host='0.0.0.0')
