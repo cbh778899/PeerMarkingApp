@@ -48,6 +48,7 @@ function uploadSettingFile(event) {
                 closePage('new-marking-panel')
                 await new Promise(s=>setTimeout(s, 600))
                 session_info = {id: res.session_id, password: new_marking.password}
+                afterLoginSession()
                 managementPanel()
             }, {password: new_marking.password, setting: file_reader.result})
         }
